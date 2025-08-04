@@ -1,0 +1,13 @@
+{
+    "competition_sources":  [
+                                "stanford-rna-3d-folding"
+                            ],
+    "id":  "kabitharma/rna-folding-test",
+    "enable_gpu":  "true",
+    "kernel_type":  "script",
+    "is_private":  "true",
+    "enable_internet":  "true",
+    "language":  "python",
+    "title":  "RNA Folding Test",
+    "code_file":  "rna_folding_kaggle.py"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "kabitharma/stanford-rna-3d-folding-minimal-test",
+  "title": "Stanford RNA 3D Folding - Minimal Test",
+  "code_file": "rna_folding_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": ["stanford-rna-3d-folding"],
+  "kernel_sources": []
+} 

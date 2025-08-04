@@ -1,0 +1,41 @@
+# Configuration with enhanced physics-based constraints for RNA 3D Structure Prediction
+
+# General settings
+experiment_name: "rna_folding_physics_enhanced"
+seed: 42
+device: "cuda"  # 'cuda' or 'cpu'
+
+# Data settings
+data_dir: "datasets/stanford-rna-3d-folding"
+save_dir: "models/stanford-rna-3d-folding/physics_enhanced"
+num_workers: 4
+
+# Model architecture
+vocab_size: 5  # A, U, G, C, N (padding)
+embedding_dim: 128
+hidden_dim: 256
+num_layers: 4
+num_heads: 8
+dropout: 0.1
+num_atoms: 5  # 5 atoms per nucleotide
+coord_dims: 3  # 3D coordinates (x, y, z)
+max_seq_len: 500
+
+# Training settings
+batch_size: 16
+num_epochs: 100
+learning_rate: 5.0e-4
+weight_decay: 1.0e-5
+patience: 15  # For early stopping
+
+# Enhanced physics-based constraint weights
+bond_length_weight: 0.5    # Increased weight for bond length constraints
+bond_angle_weight: 0.5     # Increased weight for bond angle constraints
+steric_clash_weight: 0.8   # Increased weight for steric clash penalties
+
+# Data transforms and augmentation
+normalize_coords: true
+random_rotation: true
+random_noise: 0.05
+jitter_strength: 0.02
+atom_mask_prob: 0.1 

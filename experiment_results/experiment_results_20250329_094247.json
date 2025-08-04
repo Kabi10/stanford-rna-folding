@@ -1,0 +1,15 @@
+{
+  "timestamp": "20250329_094247",
+  "device": "cpu",
+  "seed_base": 42,
+  "experiments": [
+    {
+      "config_path": "configs/base_config.yaml",
+      "success": false,
+      "best_rmsd": null,
+      "save_dir": null,
+      "elapsed_time": 35.29647994041443,
+      "seed": 42
+    }
+  ]
+}

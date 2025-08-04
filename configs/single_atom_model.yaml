@@ -1,0 +1,62 @@
+# Single Atom RNA Structure Prediction Model Configuration
+# Optimized for predicting a single atom per nucleotide
+
+data:
+  train_sequence_file: 'datasets/stanford-rna-3d-folding/train_sequences.csv'
+  train_labels_file: 'datasets/stanford-rna-3d-folding/train_labels.csv'
+  val_sequence_file: 'datasets/stanford-rna-3d-folding/validation_sequences.csv'
+  val_labels_file: 'datasets/stanford-rna-3d-folding/validation_labels.csv'
+  test_sequence_file: 'datasets/stanford-rna-3d-folding/test_sequences.csv'
+  batch_size: 32
+  num_workers: 0  # No multiprocessing for Kaggle
+  sequence_bucketing: true
+
+model:
+  name: 'RNAFoldingModel'
+  params:
+    vocab_size: 5  # A, U, G, C, N (padding)
+    embedding_dim: 256  # Increased for better feature representation
+    hidden_dim: 512  # Larger hidden dimensions for improved capacity
+    num_layers: 6  # More transformer layers for deeper representation
+    num_heads: 8  # Multi-head attention
+    dropout: 0.1  # Regularization
+    num_atoms: 1  # Single-atom mode
+    multi_atom_mode: false  # Explicitly set to single-atom mode
+    coord_dims: 3  # 3D coordinates (x, y, z)
+    max_seq_len: 500  # Maximum sequence length
+    use_rna_constraints: true  # Enable RNA-specific constraints
+    bond_length_weight: 1.0  # Weight for bond length constraint
+    bond_angle_weight: 1.0  # Weight for bond angle constraint
+    steric_clash_weight: 1.5  # Weight for steric clash constraint
+    watson_crick_weight: 2.0  # Weight for Watson-Crick base pairing
+    normalize_coords: true  # Normalize coordinates in the model
+    use_relative_attention: true  # Use RNA-specific relative attention
+
+training:
+  num_epochs: 30  # Increased training time
+  learning_rate: 5.0e-5  # Adjusted learning rate for larger model
+  weight_decay: 1.0e-5  # L2 regularization
+  lr_scheduler: 'plateau'
+  lr_scheduler_params:
+    factor: 0.5  # Reduce LR by half when plateau
+    patience: 3  # Wait 3 epochs before reducing LR
+    verbose: true
+  gradient_clip_val: 1.0  # Prevent exploding gradients
+  early_stopping: true
+  patience: 5  # Stop training if no improvement after 5 epochs
+  checkpoint_dir: 'models/stanford-rna-3d-folding/single_atom'
+
+transforms:
+  train:
+    normalize_coords: true  # Normalize coordinates to be scale-invariant
+    random_rotation: true  # Apply random rotations for data augmentation
+    position_noise: 0.05  # Add small noise to coordinates for robustness
+    atom_mask_prob: 0.1  # Randomly mask atoms for better generalization
+  val:
+    normalize_coords: true
+    random_rotation: false  # No rotation for validation
+    position_noise: 0.0  # No noise for validation
+    atom_mask_prob: 0.0  # No masking for validation
+
+misc:
+  seed: 42  # Random seed for reproducibility 

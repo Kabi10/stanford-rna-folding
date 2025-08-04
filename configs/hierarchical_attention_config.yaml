@@ -1,0 +1,61 @@
+# Configuration with hierarchical attention architecture for RNA 3D Structure Prediction
+# This model uses multi-level attention to model RNA's structural organization
+
+# General settings
+experiment_name: "rna_folding_hierarchical_attention"
+seed: 42
+device: "cuda"  # 'cuda' or 'cpu'
+
+# Data settings
+data_dir: "datasets/stanford-rna-3d-folding"
+save_dir: "models/stanford-rna-3d-folding/hierarchical_attention"
+num_workers: 4
+
+# Hierarchical attention model architecture
+vocab_size: 5  # A, U, G, C, N (padding)
+embedding_dim: 256        # Increased from 128 in base model
+hidden_dim: 512           # Increased from 256 in base model
+num_layers: 6             # Number of hierarchical encoder layers
+dropout: 0.15             # Slightly increased dropout
+num_atoms: 5              # 5 atoms per nucleotide
+coord_dims: 3             # 3D coordinates (x, y, z)
+max_seq_len: 500
+use_hierarchical_attention: true  # Use hierarchical attention instead of standard transformer
+
+# Hierarchical attention settings
+num_primary_heads: 4      # Heads for primary structure (sequence)
+num_secondary_heads: 6    # Heads for secondary structure (base pairs, stems, loops)
+num_tertiary_heads: 6     # Heads for tertiary structure (global 3D architecture)
+pair_aware: true          # Use base-pairing aware attention for secondary structure
+pair_bonus: 2.0           # Weight bonus for valid base pairs
+
+# Memory optimization settings
+use_gradient_checkpointing: true   # Enable gradient checkpointing to reduce memory usage
+use_mixed_precision: true          # Enable mixed precision training with torch.cuda.amp
+gradient_accumulation_steps: 2     # Use gradient accumulation for larger effective batch sizes
+
+# Training settings
+batch_size: 16            # Batch size
+num_epochs: 100
+learning_rate: 3.0e-4     # Slightly lower learning rate for deeper model
+weight_decay: 2.0e-5      # Slightly increased weight decay
+patience: 20              # Increased patience for deeper model
+
+# Scheduler settings
+scheduler_type: "one_cycle"   # Use one cycle learning rate schedule
+pct_start: 0.3                # Percentage of iterations for learning rate warmup
+div_factor: 25.0              # Initial learning rate division factor
+final_div_factor: 10000.0     # Final learning rate division factor
+
+# Physics-based constraint weights
+bond_length_weight: 0.2
+bond_angle_weight: 0.2
+steric_clash_weight: 0.3
+watson_crick_weight: 0.5      # Weight for Watson-Crick base pairing constraints
+
+# Data transforms and augmentation
+normalize_coords: true
+random_rotation: true
+random_noise: 0.05
+jitter_strength: 0.02
+atom_mask_prob: 0.1 

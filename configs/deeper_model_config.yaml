@@ -1,0 +1,41 @@
+# Configuration with deeper and wider model architecture for RNA 3D Structure Prediction
+
+# General settings
+experiment_name: "rna_folding_deeper_model"
+seed: 42
+device: "cuda"  # 'cuda' or 'cpu'
+
+# Data settings
+data_dir: "datasets/stanford-rna-3d-folding"
+save_dir: "models/stanford-rna-3d-folding/deeper_model"
+num_workers: 4
+
+# Enhanced model architecture
+vocab_size: 5  # A, U, G, C, N (padding)
+embedding_dim: 256        # Increased from 128
+hidden_dim: 512           # Increased from 256
+num_layers: 8             # Increased from 4
+num_heads: 16             # Increased from 8
+dropout: 0.15             # Slightly increased dropout
+num_atoms: 5  # 5 atoms per nucleotide
+coord_dims: 3  # 3D coordinates (x, y, z)
+max_seq_len: 500
+
+# Training settings
+batch_size: 16
+num_epochs: 100
+learning_rate: 3.0e-4     # Slightly lower learning rate for deeper model
+weight_decay: 2.0e-5      # Slightly increased weight decay
+patience: 20              # Increased patience for deeper model
+
+# Physics-based constraint weights
+bond_length_weight: 0.2
+bond_angle_weight: 0.2
+steric_clash_weight: 0.3
+
+# Data transforms and augmentation
+normalize_coords: true
+random_rotation: true
+random_noise: 0.05
+jitter_strength: 0.02
+atom_mask_prob: 0.1 

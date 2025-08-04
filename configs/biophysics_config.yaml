@@ -1,0 +1,63 @@
+# Configuration for RNA folding model with enhanced biophysical constraints
+# This configuration extends the base model with RNA-specific constraints
+
+# Data settings
+data:
+  train_sequence_file: 'datasets/stanford-rna-3d-folding/train_sequences.csv'
+  train_labels_file: 'datasets/stanford-rna-3d-folding/train_labels.csv'
+  val_sequence_file: 'datasets/stanford-rna-3d-folding/validation_sequences.csv'
+  val_labels_file: 'datasets/stanford-rna-3d-folding/validation_labels.csv'
+  test_sequence_file: 'datasets/stanford-rna-3d-folding/test_sequences.csv'
+  batch_size: 32
+  num_workers: 4
+  sequence_bucketing: True  # Group similar length sequences together
+
+# Model settings
+model:
+  name: 'RNAFoldingModel'
+  params:
+    vocab_size: 5  # A, U, G, C, N (padding)
+    embedding_dim: 192
+    hidden_dim: 384
+    num_layers: 6
+    num_heads: 8
+    dropout: 0.1
+    num_atoms: 5  # Number of atoms per nucleotide
+    coord_dims: 3  # 3D coordinates (x, y, z)
+    max_seq_len: 500
+    # RNA-specific constraint settings
+    use_rna_constraints: True
+    bond_length_weight: 1.0
+    bond_angle_weight: 1.0
+    steric_clash_weight: 1.5
+    watson_crick_weight: 2.0  # Emphasize Watson-Crick base pairing
+
+# Training settings
+training:
+  num_epochs: 50
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  lr_scheduler: 'cosine'  # Options: 'step', 'cosine', 'linear'
+  lr_scheduler_params:
+    step_size: 10
+    gamma: 0.5
+  gradient_clip_val: 1.0
+  early_stopping: True
+  patience: 10
+  checkpoint_dir: 'models/stanford-rna-3d-folding'
+  log_every_n_steps: 50
+
+# Evaluation settings
+evaluation:
+  metrics: ['rmsd', 'tm_score']
+  visualization: True
+  num_visualizations: 5
+  save_predictions: True
+
+# Miscellaneous
+misc:
+  seed: 42
+  use_wandb: True
+  wandb_project: 'stanford-rna-3d-folding'
+  wandb_run_name: 'biophysics-enhanced-model'
+  wandb_tags: ['rna', 'transformer', 'biophysics', 'watson-crick'] 

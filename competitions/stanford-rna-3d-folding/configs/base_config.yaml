@@ -1,0 +1,30 @@
+# Data settings
+data_dir: "../datasets/stanford-rna-3d-folding"
+model_dir: "../models/stanford-rna-3d-folding"
+
+# Training settings
+batch_size: 32
+num_workers: 4
+num_epochs: 100
+checkpoint_freq: 5
+use_wandb: true
+
+# Model architecture
+d_model: 256
+nhead: 8
+num_encoder_layers: 6
+dim_feedforward: 1024
+coord_hidden_dim: 512
+coord_num_layers: 3
+
+# Optimization
+learning_rate: 0.001
+weight_decay: 0.0001
+
+# Data augmentation
+use_augmentation: true
+normalize_coords: true
+
+# Logging
+log_interval: 100
+val_interval: 1 

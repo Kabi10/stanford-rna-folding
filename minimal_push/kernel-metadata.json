@@ -1,0 +1,13 @@
+{
+  "id": "kabitharma/simple-rna-test-cpu",
+  "title": "Simple RNA Test CPU",
+  "code_file": "rna_folding_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "true",
+  "competition_sources": [
+    "stanford-rna-3d-folding"
+  ]
+}

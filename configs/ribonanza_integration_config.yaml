@@ -1,0 +1,74 @@
+# Configuration for hybrid RNA folding model with RibonanzaNet integration
+
+# Model Architecture
+model:
+  vocab_size: 5  # A, U, G, C, N (padding)
+  embedding_dim: 256
+  hidden_dim: 512
+  num_layers: 6
+  num_heads: 8
+  dropout: 0.1
+  multi_atom_mode: true
+  num_atoms: 5  # Always 5 in multi-atom mode
+  coord_dims: 3
+  max_seq_len: 500
+  normalize_coords: true
+  use_relative_attention: true
+
+# RibonanzaNet Integration
+ribonanza:
+  pretrained_path: "models/ribonanzanet/pretrained_model.pt"
+  embedding_dim: 768  # Standard RibonanzaNet embedding size
+  freeze_base: true
+  layer_pooling: "last"  # Options: "last", "all", "weighted"
+  integration_mode: "concat"  # Options: "concat", "add", "gate"
+
+# Physics Constraints
+constraints:
+  use_rna_constraints: true
+  bond_length_weight: 1.0
+  bond_angle_weight: 1.0
+  steric_clash_weight: 1.0
+  watson_crick_weight: 1.0
+
+# Training Configuration
+training:
+  batch_size: 16
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-4
+  mixed_precision: true
+  clip_grad_norm: 1.0
+  epochs: 100
+  early_stopping_patience: 10
+  scheduler: "one_cycle"  # Options: "one_cycle", "cosine", "reduce_on_plateau"
+  warmup_epochs: 5
+  weight_decay: 1.0e-5
+  optimizer: "adamw"  # Options: "adam", "adamw", "sgd"
+  augmentation:
+    random_rotation: true
+    random_noise: 0.05
+    jitter_strength: 0.1
+    atom_mask_prob: 0.1
+
+# Data Configuration
+data:
+  train_path: "datasets/stanford-rna-3d-folding/train"
+  validation_path: "datasets/stanford-rna-3d-folding/validation"
+  test_path: "datasets/stanford-rna-3d-folding/test"
+  num_workers: 4
+  pin_memory: true
+
+# Logging Configuration
+logging:
+  wandb_project: "stanford-rna-3d-folding"
+  wandb_name: "ribonanza_hybrid"
+  log_interval: 10
+  save_interval: 5  # Save checkpoint every N epochs
+  checkpoint_dir: "models/stanford-rna-3d-folding"
+  max_checkpoints: 3  # Keep only the last N checkpoints
+
+# Multi-Structure Generation
+multiple_structures:
+  num_structures: 5
+  diversity_method: "stochastic"  # Options: "stochastic", "perturbation", "fragment", "guided"
+  diversity_strength: 0.2 

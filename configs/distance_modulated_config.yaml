@@ -1,0 +1,61 @@
+# Configuration with distance-modulated attention for RNA 3D Structure Prediction
+# Uses iterative refinement with distance-based attention for improved geometric awareness
+
+# General settings
+experiment_name: "rna_folding_distance_modulated"
+seed: 42
+device: "cuda"  # 'cuda' or 'cpu'
+
+# Data settings
+data_dir: "datasets/stanford-rna-3d-folding"
+save_dir: "models/stanford-rna-3d-folding/distance_modulated"
+num_workers: 4
+
+# Model architecture
+vocab_size: 5  # A, U, G, C, N (padding)
+embedding_dim: 256        # Embedding dimension
+hidden_dim: 512           # Hidden dimension
+num_layers: 6             # Number of transformer layers
+num_heads: 8              # Number of attention heads
+dropout: 0.15             # Dropout rate
+num_atoms: 5              # 5 atoms per nucleotide
+coord_dims: 3             # 3D coordinates (x, y, z)
+max_seq_len: 500
+use_distance_modulation: true      # Enable distance-modulated attention
+distance_scaling: "inverse"        # Type of distance scaling ("inverse", "gaussian", or "learned")
+num_refinement_steps: 3            # Number of iterative refinement steps
+
+# Distance-modulated attention settings
+max_distance: 30.0                 # Maximum distance in Angstroms
+min_distance: 1.0                  # Minimum distance in Angstroms
+temperature: 5.0                   # Temperature for softening distance effects
+
+# Memory optimization settings
+use_gradient_checkpointing: true   # Enable gradient checkpointing to reduce memory usage
+use_mixed_precision: true          # Enable mixed precision training with torch.cuda.amp
+gradient_accumulation_steps: 2     # Use gradient accumulation for larger effective batch sizes
+
+# Training settings
+batch_size: 16
+num_epochs: 100
+learning_rate: 3.0e-4     # Learning rate
+weight_decay: 2.0e-5      # Weight decay
+patience: 20              # Patience for early stopping
+
+# Scheduler settings
+scheduler_type: "one_cycle"   # Learning rate scheduler type
+pct_start: 0.3                # Percentage of training for warmup
+div_factor: 25.0              # Initial learning rate division factor
+final_div_factor: 10000.0     # Final learning rate division factor
+
+# Physics-based constraint weights
+bond_length_weight: 0.2
+bond_angle_weight: 0.2
+steric_clash_weight: 0.3
+
+# Data transforms and augmentation
+normalize_coords: true
+random_rotation: true
+random_noise: 0.05
+jitter_strength: 0.02
+atom_mask_prob: 0.1 

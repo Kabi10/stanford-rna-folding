@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Datasets (uncomment if you want to exclude datasets)
+# datasets/
+
+# Large model files
+*.pkl
+*.h5
+*.pt
+*.pth
+*.bin
+*.onnx
+*.tflite
+*.pb
+models/*.joblib
+
+# Submission files (uncomment if you want to exclude all submissions)
+# submissions/
+
+# Logs
+logs/
+*.log
+
+# Local development configuration
+.env
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*~
+
+# CSV and Excel files (uncomment if you want to exclude all data files)
+# *.csv
+# *.xlsx
+# *.xls
+
+# Zip files
+*.zip
+*.gz
+*.tar
+*.7z
+
+# Custom project excludes
+# Add your custom exclusions here 
