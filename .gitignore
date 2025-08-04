@@ -46,6 +46,15 @@ logs/
 # Local development configuration
 .env
 .env.local
+kaggle.json
+*.key
+*.pem
+*.p12
+*.pfx
+*secret*
+*private*
+*credentials*
+config.json
 
 # System files
 .DS_Store
