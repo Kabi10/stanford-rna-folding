@@ -1,0 +1,55 @@
+# Data manipulation and analysis
+numpy>=1.20.0
+pandas>=1.3.0
+scipy==1.10.1
+
+# Visualization
+matplotlib>=3.5.0
+seaborn==0.12.2
+plotly==5.15.0
+
+# Machine Learning
+scikit-learn>=1.0.0
+xgboost==1.7.5
+lightgbm==3.3.5
+catboost==1.2
+
+# Deep Learning
+tensorflow==2.12.0
+pytorch>=1.12.0
+torchvision>=0.13.0
+keras==2.12.0
+
+# Natural Language Processing
+nltk==3.8.1
+spacy==3.5.3
+transformers==4.30.2
+
+# Image Processing
+opencv-python==4.7.0.72
+pillow==9.5.0
+
+# Utilities
+tqdm>=4.64.0
+ipykernel==6.23.3
+jupyter==1.0.0
+ipywidgets==8.0.6
+
+# Kaggle specific
+kaggle>=1.5.12
+
+# Feature engineering
+featuretools==1.26.0
+category-encoders==2.6.1
+
+# RNA-specific libraries
+arnie>=1.0.0
+draw_rna>=0.1.0
+biopython>=1.79
+
+# Additional utilities
+pyyaml>=6.0
+pytest>=7.0.0
+
+# WandB
+wandb>=0.13.0 

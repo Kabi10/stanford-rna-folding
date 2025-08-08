@@ -1,0 +1,33 @@
+# Low-memory GPU configuration (K80, T4 small)
+# Conservative settings for limited memory
+
+experiment_name: "kaggle_rna_folding_gpu_small"
+project: "stanford-rna-3d-folding"
+seed: 42
+
+# Conservative GPU settings for low-memory instances
+batch_size: 12
+gradient_accumulation_steps: 4  # Effective batch size = 48
+learning_rate: 6e-4  # Slightly higher than base
+
+# Smaller model for memory constraints
+embedding_dim: 192
+hidden_dim: 384
+num_layers: 4
+num_heads: 6
+dropout: 0.15  # Higher dropout for smaller model
+
+# Reduced data loading
+num_workers: 1
+prefetch_factor: 1
+max_memory_usage: 0.8
+
+# Shorter sequences to save memory
+max_seq_len: 800
+
+# More frequent checkpointing due to instability risk
+save_every_n_epochs: 3
+keep_last_n_checkpoints: 5
+
+# All other settings inherit from base config
+_base_: "kaggle_gpu_config.yaml"

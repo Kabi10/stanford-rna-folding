@@ -1,0 +1,49 @@
+{
+  "title": "Stanford RNA 3D Folding Dataset",
+  "id": "kabitharma/stanford-rna-3d-folding",
+  "licenses": [
+    {
+      "name": "MIT"
+    }
+  ],
+  "keywords": [
+    "rna",
+    "protein-folding",
+    "bioinformatics",
+    "deep-learning",
+    "transformer"
+  ],
+  "collaborators": [],
+  "data": [
+    {
+      "description": "RNA dataset file: train_sequences.csv",
+      "name": "train_sequences.csv",
+      "totalBytes": 3066192,
+      "columns": []
+    },
+    {
+      "description": "RNA dataset file: train_labels.csv",
+      "name": "train_labels.csv",
+      "totalBytes": 9793865,
+      "columns": []
+    },
+    {
+      "description": "RNA dataset file: validation_sequences.csv",
+      "name": "validation_sequences.csv",
+      "totalBytes": 10057,
+      "columns": []
+    },
+    {
+      "description": "RNA dataset file: validation_labels.csv",
+      "name": "validation_labels.csv",
+      "totalBytes": 2492548,
+      "columns": []
+    },
+    {
+      "description": "RNA dataset file: test_sequences.csv",
+      "name": "test_sequences.csv",
+      "totalBytes": 10057,
+      "columns": []
+    }
+  ]
+}

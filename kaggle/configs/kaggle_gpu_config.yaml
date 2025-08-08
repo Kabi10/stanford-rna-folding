@@ -1,0 +1,110 @@
+# Kaggle GPU-optimized configuration for Stanford RNA 3D folding
+# Designed for V100/P100 instances with 16-32GB memory
+
+experiment_name: "kaggle_rna_folding_gpu_v1"
+project: "stanford-rna-3d-folding"
+run_name: "kaggle_gpu_physics_transformer"
+seed: 42
+
+# Kaggle paths (will be overridden by training script)
+data_dir: "/kaggle/input/stanford-rna-3d-folding"
+save_dir: "/kaggle/working/experiments"
+checkpoint_dir: "/kaggle/working/checkpoints"
+log_dir: "/kaggle/working/logs"
+
+# GPU-optimized data loading
+num_workers: 2  # Kaggle has limited CPU cores
+pin_memory: true
+persistent_workers: true
+
+# Data transforms optimized for GPU
+normalize: true
+augment: true
+rotation: true
+jitter: 0.02
+noise: 0.02
+random_mask: 0.05
+
+# Model architecture (same as validated CPU version)
+embedding_dim: 256
+hidden_dim: 512
+num_layers: 6
+num_heads: 8
+dropout: 0.1
+num_atoms: 1           # Single-atom mode for competition
+multi_atom_mode: false
+coord_dims: 3
+max_seq_len: 1200
+use_relative_attention: false  # Disabled due to shape mismatch
+use_rna_constraints: true
+
+# Physics constraint weights
+bond_length_weight: 0.3
+bond_angle_weight: 0.3
+steric_clash_weight: 0.5
+watson_crick_weight: 0.2
+normalize_coords: true
+
+# GPU-optimized training parameters
+device: "cuda"
+batch_size: 24  # Will be auto-adjusted based on GPU memory
+use_mixed_precision: true
+gradient_accumulation_steps: 2  # Effective batch size = 48
+
+# Optimized for GPU training speed
+learning_rate: 7.5e-4  # Scaled for larger effective batch size
+weight_decay: 1.0e-5
+scheduler_type: "reduce_on_plateau"
+min_lr: 1.0e-7
+lr_factor: 0.5
+lr_patience: 5
+
+# Training schedule optimized for Kaggle time limits
+epochs: 25
+patience: 12      # Early stopping
+min_epochs: 5
+improvement_threshold: 0.001
+
+# GPU memory and performance optimizations
+gradient_clip_val: 1.0
+keep_last_n_checkpoints: 3
+save_every_n_epochs: 5
+
+# Monitoring and logging
+log_every_n_steps: 50
+eval_every_n_epochs: 2
+save_predictions: true
+
+# Kaggle-specific settings
+kaggle_mode: true
+disable_wandb: true
+save_final_model: true
+create_submission: false  # Set to true if competition submission needed
+
+# GPU memory management
+empty_cache_every_n_steps: 100
+max_memory_usage: 0.9  # Use 90% of available GPU memory
+
+# Advanced GPU optimizations
+torch_compile: false  # Disable for compatibility
+cudnn_benchmark: true
+cudnn_deterministic: false  # Faster but less reproducible
+
+# Data loading optimizations for GPU
+prefetch_factor: 2
+drop_last: true  # For consistent batch sizes
+
+# Model checkpointing strategy
+checkpoint_strategy: "best_rmsd"  # Save based on best RMSD
+save_optimizer_state: true
+save_scheduler_state: true
+
+# Validation settings
+validation_batch_size: 32  # Can be larger than training batch
+compute_val_metrics: true
+val_metrics: ["rmsd", "tm_score"]
+
+# Performance monitoring
+track_gpu_memory: true
+track_training_speed: true
+log_system_stats: true

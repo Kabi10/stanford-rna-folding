@@ -1,0 +1,36 @@
+# High-memory GPU configuration (V100 32GB, A100)
+# Optimized for maximum throughput
+
+experiment_name: "kaggle_rna_folding_gpu_large"
+project: "stanford-rna-3d-folding"
+seed: 42
+
+# Aggressive GPU settings for high-memory instances
+batch_size: 48
+gradient_accumulation_steps: 1  # No accumulation needed
+learning_rate: 1.2e-3  # Higher LR for larger batch
+
+# Model can be larger with more memory
+embedding_dim: 320
+hidden_dim: 640
+num_layers: 8
+num_heads: 10
+dropout: 0.1
+
+# More aggressive data augmentation
+jitter: 0.03
+noise: 0.03
+random_mask: 0.08
+
+# Extended training for better convergence
+epochs: 35
+patience: 15
+min_epochs: 8
+
+# Memory optimizations
+num_workers: 4
+prefetch_factor: 4
+max_memory_usage: 0.95
+
+# All other settings inherit from base config
+_base_: "kaggle_gpu_config.yaml"

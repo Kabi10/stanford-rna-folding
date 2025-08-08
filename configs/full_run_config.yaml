@@ -1,0 +1,55 @@
+# Full training run configuration for physics-enhanced transformer
+
+experiment_name: "rnafold_full_physics_v1"
+project: "stanford-rna-3d-folding"
+run_name: "full_physics_transformer_v1"
+seed: 42
+
+# Data
+data_dir: "datasets/stanford-rna-3d-folding"
+save_dir: "experiments/full_physics_v1"
+num_workers: 4
+
+# Transforms
+normalize: true
+augment: true
+rotation: true
+jitter: 0.02
+noise: 0.02
+random_mask: 0.05
+
+# Model
+embedding_dim: 256
+hidden_dim: 512
+num_layers: 6
+num_heads: 8
+dropout: 0.1
+num_atoms: 1           # start with single-atom mode (competition provides x_1, y_1, z_1)
+multi_atom_mode: false
+coord_dims: 3
+max_seq_len: 1200
+use_relative_attention: false
+use_rna_constraints: true
+bond_length_weight: 0.3
+bond_angle_weight: 0.3
+steric_clash_weight: 0.5
+watson_crick_weight: 0.2
+normalize_coords: true
+
+# Optim
+batch_size: 8
+learning_rate: 5.0e-4
+weight_decay: 1.0e-5
+scheduler_type: "reduce_on_plateau"
+min_lr: 1.0e-7
+lr_factor: 0.5
+lr_patience: 5
+patience: 20      # early stopping
+min_epochs: 5
+epochs: 40
+use_mixed_precision: true
+gradient_accumulation_steps: 2
+gradient_clip_val: 1.0
+keep_last_n_checkpoints: 5
+improvement_threshold: 0.001
+

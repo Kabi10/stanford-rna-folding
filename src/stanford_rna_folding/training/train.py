@@ -75,33 +75,36 @@ def train_model(
     # Initialize transforms
     # Use augmentation for training
     train_transform = RNADataTransform(
-        normalize=config.get('normalize', True),
-        augment=config.get('augment', True),
-        rotation=config.get('rotation', True),
-        jitter=config.get('jitter', 0.1),
-        noise=config.get('noise', 0.05),
-        random_mask=config.get('random_mask', 0.1),
+        normalize_coords=config.get('normalize', True),
+        random_rotation=config.get('rotation', True),
+        random_noise=config.get('noise', 0.05),
+        jitter_strength=config.get('jitter', 0.1),
+        atom_mask_prob=config.get('random_mask', 0.1),
     )
-    
+    # Mark training mode for transform augmentations
+    train_transform.training = True
+
     # Initialize validation transforms (no augmentation)
     val_transform = RNADataTransform(
-        normalize=config.get('normalize', True),
-        augment=False,
+        normalize_coords=config.get('normalize', True),
+        random_rotation=False,
+        random_noise=0.0,
+        jitter_strength=0.0,
+        atom_mask_prob=0.0,
     )
+    val_transform.training = False
     
     # Create datasets
     train_dataset = StanfordRNADataset(
-        sequences_file=data_dir / config['train_sequence_file'],
-        labels_file=data_dir / config['train_labels_file'],
-        transform=train_transform,
+        data_dir=str(data_dir),
         split="train",
+        transform=train_transform,
     )
-    
+
     val_dataset = StanfordRNADataset(
-        sequences_file=data_dir / config['val_sequence_file'],
-        labels_file=data_dir / config['val_labels_file'],
-        transform=val_transform,
+        data_dir=str(data_dir),
         split="validation",
+        transform=val_transform,
     )
     
     # Create data loaders
@@ -128,14 +131,23 @@ def train_model(
     
     # Create model
     model = RNAFoldingModel(
-        vocab_size=len(train_dataset.vocab),
-        d_model=config['d_model'],
-        d_hidden=config['d_hidden'],
-        n_layers=config['n_layers'],
-        n_heads=config['n_heads'],
-        max_seq_len=config['max_seq_len'],
-        dropout=config['dropout'],
-        n_atoms=config.get('n_atoms', 5),
+        vocab_size=5,
+        embedding_dim=config.get('embedding_dim', 256),
+        hidden_dim=config.get('hidden_dim', 512),
+        num_layers=config.get('num_layers', 6),
+        num_heads=config.get('num_heads', 8),
+        dropout=config.get('dropout', 0.1),
+        num_atoms=config.get('num_atoms', 1),
+        multi_atom_mode=config.get('multi_atom_mode', False),
+        coord_dims=config.get('coord_dims', 3),
+        max_seq_len=config.get('max_seq_len', 1200),
+        use_rna_constraints=config.get('use_rna_constraints', True),
+        bond_length_weight=config.get('bond_length_weight', 0.3),
+        bond_angle_weight=config.get('bond_angle_weight', 0.3),
+        steric_clash_weight=config.get('steric_clash_weight', 0.5),
+        watson_crick_weight=config.get('watson_crick_weight', 0.2),
+        normalize_coords=config.get('model_normalize_coords', False),
+        use_relative_attention=config.get('use_relative_attention', True),
     ).to(device)
     
     print(f"Model created with {sum(p.numel() for p in model.parameters())} parameters")
@@ -172,7 +184,6 @@ def train_model(
             mode='min',
             factor=config.get('lr_factor', 0.5),
             patience=config.get('lr_patience', 5),
-            verbose=True,
             min_lr=config.get('min_lr', 1e-7),
         )
     
@@ -411,18 +422,34 @@ def train_one_epoch(
         with autocast(enabled=use_mixed_precision and torch.cuda.is_available()):
             # Forward pass
             pred_coords = model(sequences, lengths)
+
+            # Align coordinate shapes if dataset has 5 atoms but model predicts 1 (or vice versa)
+            coords_in = coordinates
+            if pred_coords.shape[2] != coords_in.shape[2]:
+                if pred_coords.shape[2] == 1 and coords_in.shape[2] >= 1:
+                    coords_in = coords_in[:, :, :1, :]
+                elif pred_coords.shape[2] == 5 and coords_in.shape[2] == 1:
+                    coords_in = coords_in.repeat(1, 1, 5, 1)
+
+            # Compute loss manually (mask-aware) with optional physics constraints
+            mask = (sequences != 4).to(pred_coords.device)
+            coord_mask = mask.unsqueeze(-1).unsqueeze(-1).float()
+            # MSE over valid positions
+            diff = (pred_coords - coords_in) * coord_mask
+            mse_sum = (diff ** 2).sum()
+            denom = coord_mask.sum() * pred_coords.shape[-1]  # valid positions * 3
+            mse = mse_sum / (denom + 1e-8)
+            rmsd_val = torch.sqrt(mse + 1e-8)
+            # Physics constraints if available
+            bl = model.compute_bond_length_loss(pred_coords, mask) if hasattr(model, 'compute_bond_length_loss') else torch.tensor(0.0, device=pred_coords.device)
+            ba = model.compute_bond_angle_loss(pred_coords, mask) if hasattr(model, 'compute_bond_angle_loss') else torch.tensor(0.0, device=pred_coords.device)
+            sc = model.compute_steric_clash_loss(pred_coords, mask) if hasattr(model, 'compute_steric_clash_loss') else torch.tensor(0.0, device=pred_coords.device)
+            loss = rmsd_val + bond_length_weight * bl + bond_angle_weight * ba + steric_clash_weight * sc
+            loss_components = {'rmsd': rmsd_val, 'bond_length': bl, 'bond_angle': ba, 'steric_clash': sc, 'total': loss}
             
-            # Compute loss
-            loss_dict = model.compute_loss(
-                pred_coords=pred_coords,
-                true_coords=coordinates,
-                lengths=lengths,
-                bond_length_weight=bond_length_weight,
-                bond_angle_weight=bond_angle_weight,
-                steric_clash_weight=steric_clash_weight,
-            )
-            
-            loss = loss_dict['loss']
+            # loss already computed as total
+            # (retain variable name 'loss' as scalar)
+
             
             # Scale loss for gradient accumulation
             loss = loss / gradient_accumulation_steps
@@ -456,8 +483,11 @@ def train_one_epoch(
             optimizer.zero_grad()
         
         # Update running losses - scale back to account for gradient accumulation
-        for k, v in loss_dict.items():
-            running_losses[k] += v.item() * gradient_accumulation_steps
+        running_losses['loss'] += loss.item() * gradient_accumulation_steps
+        running_losses['mse_loss'] += loss_components.get('rmsd', torch.tensor(0.0, device=device)).item() * gradient_accumulation_steps
+        running_losses['bond_length_loss'] += loss_components.get('bond_length', torch.tensor(0.0, device=device)).item() * gradient_accumulation_steps
+        running_losses['bond_angle_loss'] += loss_components.get('bond_angle', torch.tensor(0.0, device=device)).item() * gradient_accumulation_steps
+        running_losses['steric_clash_loss'] += loss_components.get('steric_clash', torch.tensor(0.0, device=device)).item() * gradient_accumulation_steps
         
         # Update progress bar
         elapsed = time.time() - start_time
@@ -468,7 +498,7 @@ def train_one_epoch(
             running_losses['samples_per_second'] = samples_per_sec
             
             progress_bar.set_postfix({
-                'loss': f"{loss_dict['loss'].item():.4f}",
+                'loss': f"{loss.item():.4f}",
                 'b/s': f"{batches_per_sec:.2f}",
                 's/s': f"{samples_per_sec:.2f}"
             })
@@ -538,16 +568,29 @@ def validate_model(
             with autocast(enabled=use_mixed_precision and torch.cuda.is_available()):
                 # Forward pass
                 pred_coords = model(sequences, lengths)
-                
-                # Compute loss
-                loss_dict = model.compute_loss(
-                    pred_coords=pred_coords,
-                    true_coords=coordinates,
-                    lengths=lengths,
-                    bond_length_weight=bond_length_weight,
-                    bond_angle_weight=bond_angle_weight,
-                    steric_clash_weight=steric_clash_weight,
-                )
+
+                # Align coordinate shapes analogous to training
+                coords_in = coordinates
+                if pred_coords.shape[2] != coords_in.shape[2]:
+                    if pred_coords.shape[2] == 1 and coords_in.shape[2] >= 1:
+                        coords_in = coords_in[:, :, :1, :]
+                    elif pred_coords.shape[2] == 5 and coords_in.shape[2] == 1:
+                        coords_in = coords_in.repeat(1, 1, 5, 1)
+
+                # Compute loss manually (mask-aware) with optional physics constraints
+                mask = (sequences != 4).to(pred_coords.device)
+                coord_mask = mask.unsqueeze(-1).unsqueeze(-1).float()
+                diff = (pred_coords - coords_in) * coord_mask
+                mse_sum = (diff ** 2).sum()
+                denom = coord_mask.sum() * pred_coords.shape[-1]
+                mse = mse_sum / (denom + 1e-8)
+                rmsd_val = torch.sqrt(mse + 1e-8)
+                bl = model.compute_bond_length_loss(pred_coords, mask) if hasattr(model, 'compute_bond_length_loss') else torch.tensor(0.0, device=pred_coords.device)
+                ba = model.compute_bond_angle_loss(pred_coords, mask) if hasattr(model, 'compute_bond_angle_loss') else torch.tensor(0.0, device=pred_coords.device)
+                sc = model.compute_steric_clash_loss(pred_coords, mask) if hasattr(model, 'compute_steric_clash_loss') else torch.tensor(0.0, device=pred_coords.device)
+                loss = rmsd_val + bond_length_weight * bl + bond_angle_weight * ba + steric_clash_weight * sc
+                loss_components = {'rmsd': rmsd_val, 'bond_length': bl, 'bond_angle': ba, 'steric_clash': sc, 'total': loss}
+
             
             # Compute RMSD
             _, batch_mean_rmsd = batch_rmsd(
@@ -566,8 +609,11 @@ def validate_model(
             )
             
             # Update running losses and metrics
-            for k, v in loss_dict.items():
-                running_losses[k] += v.item() * batch_size
+            running_losses['loss'] += loss.item() * batch_size
+            running_losses['mse_loss'] += loss_components.get('rmsd', torch.tensor(0.0, device=device)).item() * batch_size
+            running_losses['bond_length_loss'] += loss_components.get('bond_length', torch.tensor(0.0, device=device)).item() * batch_size
+            running_losses['bond_angle_loss'] += loss_components.get('bond_angle', torch.tensor(0.0, device=device)).item() * batch_size
+            running_losses['steric_clash_loss'] += loss_components.get('steric_clash', torch.tensor(0.0, device=device)).item() * batch_size
                 
             total_rmsd += batch_mean_rmsd.item() * batch_size
             total_tm_score += batch_mean_tm.item() * batch_size
