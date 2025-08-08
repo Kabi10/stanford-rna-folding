@@ -72,8 +72,9 @@ class CompetitionPhaseManager:
             
             # Filter labels to match filtered sequences
             valid_ids = set(train_sequences_filtered['target_id'])
+            # Extract target_id from label ID (format: target_id_residue_number)
             train_labels_filtered = train_labels[
-                train_labels['ID'].str.split('_').str[0].isin(valid_ids)
+                train_labels['ID'].str.extract(r'^([^_]+_[^_]+)_')[0].isin(valid_ids)
             ]
             
             logger.info(f"Phase 1 data: {len(train_sequences_filtered)} sequences, "
@@ -92,8 +93,9 @@ class CompetitionPhaseManager:
             # In Phase 2, we would also integrate previous public test data
             # For now, return the temporally filtered data
             valid_ids = set(train_sequences_filtered['target_id'])
+            # Extract target_id from label ID (format: target_id_residue_number)
             train_labels_filtered = train_labels[
-                train_labels['ID'].str.split('_').str[0].isin(valid_ids)
+                train_labels['ID'].str.extract(r'^([^_]+_[^_]+)_')[0].isin(valid_ids)
             ]
             
             logger.info(f"Phase 2 data: {len(train_sequences_filtered)} sequences, "
