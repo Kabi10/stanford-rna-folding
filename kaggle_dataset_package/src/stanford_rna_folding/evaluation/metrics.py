@@ -12,6 +12,11 @@ def kabsch_align(P: torch.Tensor, Q: torch.Tensor) -> torch.Tensor:
     """Align P to Q using the Kabsch algorithm.
     P, Q: shape (..., N, 3). Returns aligned P of same shape.
     """
+    # Validate shapes
+    if P.shape != Q.shape:
+        raise ValueError(f"P and Q must have the same shape, got P: {P.shape}, Q: {Q.shape}")
+    if P.numel() == 0:
+        return P.clone()
     # Center P and Q
     Pc = P - P.mean(dim=-2, keepdim=True)
     Qc = Q - Q.mean(dim=-2, keepdim=True)
@@ -43,8 +48,8 @@ def rmsd(pred: torch.Tensor, true: torch.Tensor, align: bool = True) -> torch.Te
 def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: torch.Tensor, align: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
     """Compute RMSD per-sample for a batch with padding.
     Inputs:
-      pred_coords: (B, L, A, 3)
-      true_coords: (B, L, A, 3)
+      pred_coords: (B, L, A_pred, 3)
+      true_coords: (B, L, A_true, 3)
       lengths: (B,) valid sequence lengths
     Returns: (rmsd_per_sample[B], mean_rmsd)
     """
@@ -55,12 +60,38 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
         if L <= 0:
             rmsds.append(torch.tensor(0.0, device=pred_coords.device))
             continue
-        # Flatten atoms into N = L*A
-        pred = pred_coords[i, :L].reshape(-1, 3)
-        true = true_coords[i, :L].reshape(-1, 3)
-        rmsds.append(rmsd(pred, true, align=align))
+        P = pred_coords[i, :L]
+        T = true_coords[i, :L]
+        Ap = P.shape[1]
+        At = T.shape[1]
+        pred = P.reshape(-1, 3)
+        if At == Ap:
+            true = T.reshape(-1, 3)
+            rmsds.append(rmsd(pred, true, align=align))
+        elif At % Ap == 0:
+            k = At // Ap
+            cand = []
+            for g in range(k):
+                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3)
+                if true_g.shape == pred.shape:
+                    cand.append(rmsd(pred, true_g, align=align))
+            if cand:
+                rmsds.append(torch.stack(cand).min())
+            else:
+                rmsds.append(torch.tensor(float('nan'), device=pred_coords.device))
+        else:
+            if At > Ap:
+                true = T[:, :Ap, :].reshape(-1, 3)
+            else:
+                pad_repeat = (Ap + At - 1) // At
+                T_rep = T.repeat(1, pad_repeat, 1)[:, :Ap, :]
+                true = T_rep.reshape(-1, 3)
+            if pred.shape == true.shape:
+                rmsds.append(rmsd(pred, true, align=align))
+            else:
+                rmsds.append(torch.tensor(float('nan'), device=pred_coords.device))
     rmsd_tensor = torch.stack(rmsds)
-    return rmsd_tensor, rmsd_tensor.mean()
+    return rmsd_tensor, rmsd_tensor.nanmean()
 
 
 def tm_score(pred: torch.Tensor, true: torch.Tensor, d0: float | None = None, align: bool = True) -> torch.Tensor:
