@@ -12,6 +12,14 @@ def kabsch_align(P: torch.Tensor, Q: torch.Tensor) -> torch.Tensor:
     """Align P to Q using the Kabsch algorithm.
     P, Q: shape (..., N, 3). Returns aligned P of same shape.
     """
+    # Ensure P and Q have the same shape
+    if P.shape != Q.shape:
+        raise ValueError(f"P and Q must have the same shape, got P: {P.shape}, Q: {Q.shape}")
+
+    # Handle empty or invalid tensors
+    if P.numel() == 0 or Q.numel() == 0:
+        return P.clone()
+
     # Center P and Q
     Pc = P - P.mean(dim=-2, keepdim=True)
     Qc = Q - Q.mean(dim=-2, keepdim=True)
@@ -58,6 +66,15 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
         # Flatten atoms into N = L*A
         pred = pred_coords[i, :L].reshape(-1, 3)
         true = true_coords[i, :L].reshape(-1, 3)
+
+        # Debug shape mismatch
+        if pred.shape != true.shape:
+            print(f"Shape mismatch in batch {i}: pred {pred.shape}, true {true.shape}")
+            print(f"Original shapes: pred_coords[{i}, :{L}] = {pred_coords[i, :L].shape}, true_coords[{i}, :{L}] = {true_coords[i, :L].shape}")
+            # Skip this sample to avoid crash
+            rmsds.append(torch.tensor(float('nan'), device=pred_coords.device))
+            continue
+
         rmsds.append(rmsd(pred, true, align=align))
     rmsd_tensor = torch.stack(rmsds)
     return rmsd_tensor, rmsd_tensor.mean()

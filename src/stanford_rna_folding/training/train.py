@@ -16,8 +16,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import wandb
 
-# Add torch.cuda.amp for mixed precision training
-from torch.cuda.amp import autocast, GradScaler
+# Add torch.amp for mixed precision training
+from torch.amp import autocast, GradScaler
 
 from ..data.data_processing import StanfordRNADataset, rna_collate_fn
 from ..data.transforms import RNADataTransform
@@ -400,7 +400,7 @@ def train_one_epoch(
     }
     
     # Initialize gradient scaler for mixed precision training
-    scaler = GradScaler() if use_mixed_precision and torch.cuda.is_available() else None
+    scaler = GradScaler('cuda') if use_mixed_precision and torch.cuda.is_available() else None
     
     num_batches = len(dataloader)
     total_samples = 0
@@ -419,7 +419,7 @@ def train_one_epoch(
         total_samples += batch_size
         
         # Forward pass with autocast for mixed precision
-        with autocast(enabled=use_mixed_precision and torch.cuda.is_available()):
+        with autocast('cuda', enabled=use_mixed_precision and torch.cuda.is_available()):
             # Forward pass
             pred_coords = model(sequences, lengths)
 
@@ -565,7 +565,7 @@ def validate_model(
             num_samples += batch_size
             
             # Use autocast for mixed precision
-            with autocast(enabled=use_mixed_precision and torch.cuda.is_available()):
+            with autocast('cuda', enabled=use_mixed_precision and torch.cuda.is_available()):
                 # Forward pass
                 pred_coords = model(sequences, lengths)
 
