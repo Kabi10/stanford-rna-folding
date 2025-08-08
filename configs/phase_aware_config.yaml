@@ -1,0 +1,226 @@
+# Phase-Aware Training Configuration
+# Handles different training strategies across competition phases
+
+competition:
+  name: "Stanford RNA 3D Folding"
+  current_phase: 1
+  phase_transition_date: "2025-04-23"
+  
+  phases:
+    1:
+      name: "Initial Model Training Phase"
+      temporal_cutoff: "2022-05-27"  # Safe for CASP15 validation
+      description: "Conservative training with temporal compliance"
+      data_strategy: "temporal_filtered"
+      validation_strategy: "casp15_only"
+      
+    2:
+      name: "Model Training Phase 2"
+      temporal_cutoff: "2024-09-18"  # CASP16 end
+      description: "Expanded training with Phase 1 public test integration"
+      data_strategy: "expanded_with_phase1_public"
+      validation_strategy: "holdout_validation"
+      
+    3:
+      name: "Future Data Phase"
+      temporal_cutoff: null
+      description: "Final evaluation on completely new test set"
+      data_strategy: "all_available"
+      validation_strategy: "ensemble_validation"
+
+# Phase-specific training configurations
+training:
+  phase1:
+    # Conservative approach for Phase 1
+    model:
+      architecture: "physics_enhanced_transformer"
+      hidden_dim: 512
+      num_layers: 8
+      num_heads: 8
+      dropout: 0.1
+      
+    training:
+      batch_size: 16
+      learning_rate: 1e-4
+      num_epochs: 50
+      patience: 10
+      gradient_clip: 1.0
+      
+    data:
+      temporal_compliance: true
+      temporal_cutoff: "2022-05-27"
+      validation_split: "casp15"
+      augmentation: "conservative"
+      
+    optimization:
+      mixed_precision: true
+      gradient_accumulation: 2
+      scheduler: "cosine_annealing"
+      warmup_steps: 1000
+      
+  phase2:
+    # Aggressive approach for Phase 2 with expanded data
+    model:
+      architecture: "physics_enhanced_transformer"
+      hidden_dim: 768
+      num_layers: 12
+      num_heads: 12
+      dropout: 0.15
+      
+    training:
+      batch_size: 24
+      learning_rate: 5e-5
+      num_epochs: 30
+      patience: 8
+      gradient_clip: 0.5
+      
+    data:
+      temporal_compliance: true
+      temporal_cutoff: "2024-09-18"
+      validation_split: "stratified"
+      augmentation: "aggressive"
+      integrate_phase1_public: true
+      
+    optimization:
+      mixed_precision: true
+      gradient_accumulation: 1
+      scheduler: "linear_warmup"
+      warmup_steps: 500
+      
+  phase3:
+    # Ensemble approach for final evaluation
+    model:
+      architecture: "ensemble"
+      ensemble_strategy: "weighted_average"
+      diversity_weight: 0.3
+      
+    inference:
+      num_conformations: 5
+      diversity_sampling: true
+      temperature: 1.0
+      top_k_models: 5
+      
+    ensemble:
+      phase1_weight: 0.4
+      phase2_weight: 0.6
+      diversity_bonus: true
+
+# Data management
+data:
+  paths:
+    train_sequences: "data/train_sequences.csv"
+    train_labels: "data/train_labels.csv"
+    validation_sequences: "data/validation_sequences.csv"
+    validation_labels: "data/validation_labels.csv"
+    test_sequences: "data/test_sequences.csv"
+    
+  temporal:
+    date_column: "temporal_cutoff"
+    casp15_cutoff: "2022-05-27"
+    casp16_cutoff: "2024-09-18"
+    
+  validation:
+    casp15_targets: 12
+    strategy: "temporal_holdout"
+    
+# Model management
+models:
+  save_path: "models/phase_models"
+  checkpoint_frequency: 5
+  keep_top_k: 10
+  
+  versioning:
+    naming_convention: "phase{phase}_{model_name}_{timestamp}"
+    metadata_tracking: true
+    performance_tracking: true
+    
+  ensemble:
+    max_models_per_phase: 5
+    diversity_threshold: 0.1
+    performance_threshold: 0.95
+
+# Evaluation metrics
+evaluation:
+  primary_metrics:
+    - "rmsd"
+    - "tm_score"
+    - "gdt_ts"
+    
+  secondary_metrics:
+    - "diversity_score"
+    - "physics_compliance"
+    - "computational_efficiency"
+    
+  thresholds:
+    rmsd_target: 2.0
+    tm_score_target: 0.7
+    diversity_min: 0.3
+
+# Resource management
+resources:
+  kaggle:
+    gpu_hours_limit: 30
+    tpu_hours_limit: 20
+    memory_limit: "16GB"
+    
+  allocation:
+    phase1_gpu_hours: 15
+    phase2_gpu_hours: 12
+    phase3_gpu_hours: 3
+    
+  optimization:
+    mixed_precision: true
+    gradient_checkpointing: true
+    dataloader_workers: 4
+
+# Logging and monitoring
+logging:
+  level: "INFO"
+  phase_tracking: true
+  temporal_compliance_checks: true
+  performance_monitoring: true
+  
+  wandb:
+    project: "stanford-rna-folding"
+    tags: ["competition", "phase-aware"]
+    track_phase: true
+
+# Risk management
+risk_management:
+  temporal_compliance:
+    strict_validation: true
+    automated_checks: true
+    violation_alerts: true
+    
+  data_leakage:
+    prevention_checks: true
+    audit_trail: true
+    
+  model_robustness:
+    cross_validation: true
+    stability_testing: true
+    
+  resource_monitoring:
+    quota_tracking: true
+    usage_alerts: true
+
+# Competition-specific settings
+competition_settings:
+  submission:
+    num_conformations: 5
+    coordinate_precision: 3
+    file_format: "csv"
+    
+  evaluation:
+    gdt_thresholds: [1.0, 2.0, 4.0, 8.0]
+    diversity_bonus: true
+    ensemble_scoring: true
+    
+  temporal_compliance:
+    casp16_baseline_requirement: true
+    early_sharing_eligibility: true
+    
+  phases:
+    leaderboard_reset_date: "2025-04-23"
+    final_evaluation_sequences: 40
+    private_leaderboard_only: true

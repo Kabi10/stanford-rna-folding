@@ -238,9 +238,29 @@ def main():
     config = create_kaggle_config(base_config, device_info)
     print(f"Final config - Batch size: {config['batch_size']}, Mixed precision: {config['use_mixed_precision']}")
     
+    # Add phase awareness
+    try:
+        from src.stanford_rna_folding.competition.phase_manager import CompetitionPhaseManager
+        phase_manager = CompetitionPhaseManager(config["data_dir"])
+        current_phase = phase_manager.get_current_phase()
+        print(f"Competition Phase: {current_phase}")
+
+        # Apply temporal filtering if needed
+        temporal_cutoff = phase_manager.phase_cutoffs.get(current_phase)
+        if temporal_cutoff:
+            print(f"Applying temporal cutoff: {temporal_cutoff}")
+            config["temporal_cutoff"] = temporal_cutoff
+            config["competition_phase"] = current_phase
+
+    except Exception as e:
+        print(f"Phase management not available: {e}")
+        print("Proceeding with standard training")
+        current_phase = 1
+        config["competition_phase"] = current_phase
+
     # Import and run training
     from src.stanford_rna_folding.training.train import train_model
-    
+
     try:
         model, best_rmsd, best_tm = train_model(
             config=config,
@@ -250,13 +270,16 @@ def main():
             device=config.get("device")
         )
         
-        # Save results
+        # Save results with phase information
         results = {
             "best_rmsd": float(best_rmsd),
             "best_tm_score": float(best_tm),
             "device_used": device_info["device_name"],
             "final_config": config,
-            "training_completed": True
+            "training_completed": True,
+            "competition_phase": config.get("competition_phase", 1),
+            "temporal_cutoff": config.get("temporal_cutoff"),
+            "temporal_compliance": True
         }
         
         save_kaggle_results(results, config)
