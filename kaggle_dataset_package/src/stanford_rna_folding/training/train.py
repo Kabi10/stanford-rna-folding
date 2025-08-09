@@ -620,7 +620,7 @@ def validate_model(
             
             # Update progress bar
             progress_bar.set_postfix({
-                'loss': f"{loss_dict['loss'].item():.4f}",
+                'loss': f"{loss.item():.4f}",
                 'rmsd': f"{batch_mean_rmsd.item():.4f}",
                 'tm': f"{batch_mean_tm.item():.4f}"
             })
