@@ -20,6 +20,11 @@ def kabsch_align(P: torch.Tensor, Q: torch.Tensor) -> torch.Tensor:
     if P.numel() == 0 or Q.numel() == 0:
         return P.clone()
 
+    # Cast to float32 to avoid mixed precision dtype mismatch
+    dtype = torch.float32
+    P = P.to(dtype)
+    Q = Q.to(dtype)
+
     # Center P and Q
     Pc = P - P.mean(dim=-2, keepdim=True)
     Qc = Q - Q.mean(dim=-2, keepdim=True)
@@ -69,19 +74,19 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
         Lp, Ap = P.shape[0], P.shape[1]
         Lt, At = T.shape[0], T.shape[1]
 
-        # Flatten predicted
-        pred = P.reshape(-1, 3)   # (L*Ap, 3)
+        # Flatten predicted (cast to float32 to avoid half/float mismatch)
+        pred = P.reshape(-1, 3).to(torch.float32)   # (L*Ap, 3)
 
         # If true has multiple atom sets (e.g., multiple conformations), compute min RMSD
         if At == Ap:
-            true = T.reshape(-1, 3)
+            true = T.reshape(-1, 3).to(torch.float32)
             rmsds.append(rmsd(pred, true, align=align))
         elif At % Ap == 0:
             k = At // Ap
             # Split true atoms into k groups along atom dimension
             cand = []
             for g in range(k):
-                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3)
+                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3).to(torch.float32)
                 if true_g.shape == pred.shape:
                     cand.append(rmsd(pred, true_g, align=align))
             if cand:
@@ -92,7 +97,7 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
         else:
             # Fallback: truncate/pad true to match pred
             if At > Ap:
-                true = T[:, :Ap, :].reshape(-1, 3)
+                true = T[:, :Ap, :].reshape(-1, 3).to(torch.float32)
             else:
                 # Pad true with repeats to match
                 pad_repeat = (Ap + At - 1) // At

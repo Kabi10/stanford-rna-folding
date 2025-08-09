@@ -17,6 +17,11 @@ def kabsch_align(P: torch.Tensor, Q: torch.Tensor) -> torch.Tensor:
         raise ValueError(f"P and Q must have the same shape, got P: {P.shape}, Q: {Q.shape}")
     if P.numel() == 0:
         return P.clone()
+    # Cast to float32 to avoid mixed precision dtype mismatch
+    dtype = torch.float32
+    P = P.to(dtype)
+    Q = Q.to(dtype)
+
     # Center P and Q
     Pc = P - P.mean(dim=-2, keepdim=True)
     Qc = Q - Q.mean(dim=-2, keepdim=True)
