@@ -138,7 +138,11 @@ def tm_score(pred: torch.Tensor, true: torch.Tensor, d0: float | None = None, al
 
 
 def batch_tm_score(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: torch.Tensor, align: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Batch TM-score for padded batches.
+    """Batch TM-score for padded batches with support for multiple true conformations.
+    Inputs:
+      pred_coords: (B, L, A_pred, 3)
+      true_coords: (B, L, A_true, 3)
+      lengths: (B,)
     Returns: (tm_per_sample[B], mean_tm)
     """
     B = pred_coords.shape[0]
@@ -147,6 +151,39 @@ def batch_tm_score(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths
         L = int(lengths[i].item())
         if L <= 0:
             scores.append(torch.tensor(0.0, device=pred_coords.device))
+            continue
+        P = pred_coords[i, :L]    # (L, A_pred, 3)
+        T = true_coords[i, :L]    # (L, A_true, 3)
+        Ap = P.shape[1]
+        At = T.shape[1]
+        pred = P.reshape(-1, 3).to(torch.float32)
+        if At == Ap:
+            true = T.reshape(-1, 3).to(torch.float32)
+            scores.append(tm_score(pred, true, align=align))
+        elif At % Ap == 0:
+            k = At // Ap
+            cand = []
+            for g in range(k):
+                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3).to(torch.float32)
+                if true_g.shape == pred.shape:
+                    cand.append(tm_score(pred, true_g, align=align))
+            if cand:
+                # TM-score: higher is better
+                scores.append(torch.stack(cand).max())
+            else:
+                scores.append(torch.tensor(float('nan'), device=pred_coords.device))
+        else:
+            # Fallback match
+            if At > Ap:
+                true = T[:, :Ap, :].reshape(-1, 3).to(torch.float32)
+            else:
+                pad_repeat = (Ap + At - 1) // At
+                T_rep = T.repeat(1, pad_repeat, 1)[:, :Ap, :]
+                true = T_rep.reshape(-1, 3).to(torch.float32)
+            if pred.shape == true.shape:
+                scores.append(tm_score(pred, true, align=align))
+            else:
+                scores.append(torch.tensor(float('nan'), device=pred_coords.device))
             continue
         pred = pred_coords[i, :L]
         true = true_coords[i, :L]

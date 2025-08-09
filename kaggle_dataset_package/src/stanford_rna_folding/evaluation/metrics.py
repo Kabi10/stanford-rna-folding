@@ -69,15 +69,15 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
         T = true_coords[i, :L]
         Ap = P.shape[1]
         At = T.shape[1]
-        pred = P.reshape(-1, 3)
+        pred = P.reshape(-1, 3).to(torch.float32)
         if At == Ap:
-            true = T.reshape(-1, 3)
+            true = T.reshape(-1, 3).to(torch.float32)
             rmsds.append(rmsd(pred, true, align=align))
         elif At % Ap == 0:
             k = At // Ap
             cand = []
             for g in range(k):
-                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3)
+                true_g = T[:, g*Ap:(g+1)*Ap, :].reshape(-1, 3).to(torch.float32)
                 if true_g.shape == pred.shape:
                     cand.append(rmsd(pred, true_g, align=align))
             if cand:
@@ -86,11 +86,11 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
                 rmsds.append(torch.tensor(float('nan'), device=pred_coords.device))
         else:
             if At > Ap:
-                true = T[:, :Ap, :].reshape(-1, 3)
+                true = T[:, :Ap, :].reshape(-1, 3).to(torch.float32)
             else:
                 pad_repeat = (Ap + At - 1) // At
                 T_rep = T.repeat(1, pad_repeat, 1)[:, :Ap, :]
-                true = T_rep.reshape(-1, 3)
+                true = T_rep.reshape(-1, 3).to(torch.float32)
             if pred.shape == true.shape:
                 rmsds.append(rmsd(pred, true, align=align))
             else:
@@ -100,22 +100,25 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
 
 
 def tm_score(pred: torch.Tensor, true: torch.Tensor, d0: float | None = None, align: bool = True) -> torch.Tensor:
-    """Compute an internal TM-score variant for identical-length sets.
-    pred, true: (N, 3) or (L, A, 3). If (L, A, 3), will be flattened.
+    """Compute an internal TM-score variant.
+    pred, true: (N, 3) tensors.
     """
+    pred = pred.to(torch.float32)
+    true = true.to(torch.float32)
     if pred.dim() == 3:
         pred = pred.reshape(-1, 3)
     if true.dim() == 3:
         true = true.reshape(-1, 3)
+    if pred.shape != true.shape:
+        raise ValueError(f"tm_score expects matching shapes, got pred {pred.shape}, true {true.shape}")
     N = pred.shape[-2]
     if align:
         pred = kabsch_align(pred, true)
     if d0 is None:
-        # Standard approximate d0 as in TM-score literature
         Lref = N
         d0 = 1.24 * (Lref - 15) ** (1.0/3) - 1.8
         d0 = float(max(d0, 0.5))
-    dist = torch.linalg.norm(pred - true, dim=-1)  # (N,)
+    dist = torch.linalg.norm(pred - true, dim=-1)
     score = torch.mean(1.0 / (1.0 + (dist / d0) ** 2))
     return score
 
