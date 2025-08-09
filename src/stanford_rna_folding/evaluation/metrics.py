@@ -113,13 +113,17 @@ def batch_rmsd(pred_coords: torch.Tensor, true_coords: torch.Tensor, lengths: to
 
 
 def tm_score(pred: torch.Tensor, true: torch.Tensor, d0: float | None = None, align: bool = True) -> torch.Tensor:
-    """Compute an internal TM-score variant for identical-length sets.
-    pred, true: (N, 3) or (L, A, 3). If (L, A, 3), will be flattened.
+    """Compute an internal TM-score variant.
+    pred, true: (N, 3) tensors. Casts to float32 and optionally aligns.
     """
+    pred = pred.to(torch.float32)
+    true = true.to(torch.float32)
     if pred.dim() == 3:
         pred = pred.reshape(-1, 3)
     if true.dim() == 3:
         true = true.reshape(-1, 3)
+    if pred.shape != true.shape:
+        raise ValueError(f"tm_score expects matching shapes, got pred {pred.shape}, true {true.shape}")
     N = pred.shape[-2]
     if align:
         pred = kabsch_align(pred, true)
