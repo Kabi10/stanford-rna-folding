@@ -1,8 +1,38 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
-# Competition test sequences
-test_sequences = [
+print("Stanford RNA 3D Folding Competition - Submission Generator")
+print("Loading test sequences from competition data...")
+
+# Try to load test sequences from competition data
+try:
+    # Look for test sequences in competition input
+    input_path = Path('/kaggle/input/stanford-rna-3d-folding')
+    test_files = list(input_path.glob('*test*.csv'))
+
+    if test_files:
+        test_df = pd.read_csv(test_files[0])
+        print(f"Loaded {len(test_df)} test sequences from competition data")
+
+        # Extract sequences from competition format
+        test_sequences = []
+        for _, row in test_df.iterrows():
+            if 'target_id' in row and 'sequence' in row:
+                test_sequences.append((row['target_id'], row['sequence']))
+            elif 'ID' in row and 'sequence' in row:
+                test_sequences.append((row['ID'], row['sequence']))
+
+        print(f"Processed {len(test_sequences)} sequences from competition data")
+    else:
+        raise FileNotFoundError("No test files found in competition data")
+
+except Exception as e:
+    print(f"Could not load competition data: {e}")
+    print("Using known competition test sequences...")
+
+    # Fallback to known competition test sequences
+    test_sequences = [
     ('R1107', 'GGGGGCCACAGCAGAAGCGUUCACGUCGCAGCCCCUGUCAGCCAUUGCACUCCGGCUGCGAAUUCUGCU'),
     ('R1108', 'GGGGGCCACAGCAGAAGCGUUCACGUCGCGGCCCCUGUCAGCCAUUGCACUCCGGCUGCGAAUUCUGCU'),
     ('R1116', 'CGCCCGGAUAGCUCAGUCGGUAGAGCAGCGGCUAAAACAGCUCUGGGGUUGUACCCACCCCAGAGGCCCACGUGGCGGCUAGUACUCCGGUAUUGCGGUACCCUUGUACGCCUGUUUUAGCCGCGGGUCCAGGGUUCAAGUCCCUGUUCGGGCGCCA'),
@@ -15,7 +45,7 @@ test_sequences = [
     ('R1156', 'GGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCC'),
     ('R1189', 'GGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCC'),
     ('R1190', 'GGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCC')
-]
+    ]
 
 print("Generating submission.csv for Stanford RNA 3D Folding Competition")
 

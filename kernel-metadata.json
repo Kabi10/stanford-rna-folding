@@ -1,16 +1,15 @@
 {
-
   "id": "kabitharma/stanford-rna-3d-folding-submission",
   "title": "Stanford RNA 3D Folding - Competition Submission",
-  "code_file": "submission_only_kernel.py",
+  "code_file": "simple_submission.py",
   "language": "python",
   "kernel_type": "script",
-  "is_private": "true",
-  "enable_gpu": "false",
-  "enable_tpu": "false",
-  "enable_internet": "true",
-  "dataset_sources": ["kabitharma/stanford-rna-3d-folding"],
-  "competition_sources": [],
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": ["stanford-rna-3d-folding"],
   "kernel_sources": [],
   "model_sources": []
 }
